@@ -1,0 +1,5 @@
+target
+.git
+*.log
+backend.log
+backend-error.log

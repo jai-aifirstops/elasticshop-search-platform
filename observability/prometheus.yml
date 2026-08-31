@@ -3,11 +3,16 @@ global:
   evaluation_interval: 5s
 
 scrape_configs:
+
   - job_name: spring-boot
+
     metrics_path: /actuator/prometheus
+
     static_configs:
+
       - targets:
-          - host.docker.internal:8080
+          - backend:8080
+
         labels:
           application: elasticshop-search-api
-          environment: local
+          environment: docker-local

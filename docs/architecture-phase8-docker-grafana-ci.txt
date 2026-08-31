@@ -1,0 +1,159 @@
+ELASTICSHOP - PHASE 8
+
+FULL DOCKERIZED SEARCH PLATFORM
+
+
+CONTAINERS
+
+ecommerce-frontend
+React production build served by Nginx
+
+ecommerce-backend
+Spring Boot API
+
+es01
+Elasticsearch
+
+ecommerce-postgres
+PostgreSQL
+
+ecommerce-kafka
+Apache Kafka
+
+ecommerce-redis
+Redis
+
+ecommerce-prometheus
+Prometheus
+
+ecommerce-grafana
+Grafana
+
+
+REQUEST FLOW
+
+Browser
+   |
+   v
+React + Nginx
+port 5173
+   |
+   | /api
+   v
+Spring Boot
+port 8080
+   |
+   +------ PostgreSQL
+   |
+   +------ Redis
+   |
+   +------ Kafka
+   |
+   +------ Elasticsearch
+
+
+EVENT FLOW
+
+PostgreSQL
+   |
+   v
+Kafka
+   |
+   v
+Kafka Consumer
+   |
+   +------ Elasticsearch update
+   |
+   +------ Redis invalidation
+
+
+OBSERVABILITY
+
+Spring Boot
+   |
+   | /actuator/prometheus
+   v
+Prometheus
+port 9090
+   |
+   v
+Grafana
+port 3000
+
+
+GRAFANA
+
+Dashboard:
+
+ElasticShop Search Platform
+
+Metrics include:
+
+- Search requests per second
+- Average search duration
+- JVM heap usage
+- HTTP request rate
+- Total search requests
+- Backend uptime
+- Backend availability
+
+
+CI
+
+GitHub Actions
+
+Backend:
+- Java 21
+- Maven verify
+- JUnit tests
+
+Frontend:
+- Node 24
+- npm ci
+- Vite production build
+
+Docker:
+- backend image build
+- frontend image build
+
+
+LOCAL URLS
+
+Application:
+http://127.0.0.1:5173
+
+Backend:
+http://127.0.0.1:8080
+
+Prometheus:
+http://127.0.0.1:9090
+
+Grafana:
+http://127.0.0.1:3000
+
+
+LOCAL GRAFANA LOGIN
+
+admin
+admin
+
+
+START ENTIRE PLATFORM
+
+docker compose up -d --build
+
+
+STOP WITHOUT DELETING DATA
+
+docker compose down
+
+
+WARNING
+
+Do not run:
+
+docker compose down -v
+
+unless you intentionally want to remove the
+persistent PostgreSQL, Elasticsearch,
+Prometheus and Grafana volumes.

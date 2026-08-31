@@ -16,6 +16,7 @@ services:
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
 
+
   postgres:
     image: postgres:17.11
     container_name: ecommerce-postgres
@@ -38,6 +39,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
+
 
   kafka:
     image: apache/kafka:4.0.2
@@ -73,6 +75,7 @@ services:
       timeout: 10s
       retries: 30
 
+
   redis:
     image: redis:8.10.1-alpine
     container_name: ecommerce-redis
@@ -88,6 +91,62 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
+
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+
+    container_name: ecommerce-backend
+
+    environment:
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+
+      DB_URL: jdbc:postgresql://postgres:5432/ecommerce
+      DB_USERNAME: ecommerce
+      DB_PASSWORD: ecommerce_dev_password
+
+      KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+    ports:
+      - "127.0.0.1:8080:8080"
+
+    depends_on:
+
+      elasticsearch:
+        condition: service_started
+
+      postgres:
+        condition: service_healthy
+
+      kafka:
+        condition: service_healthy
+
+      redis:
+        condition: service_healthy
+
+    restart: on-failure
+
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+
+    container_name: ecommerce-frontend
+
+    ports:
+      - "127.0.0.1:5173:80"
+
+    depends_on:
+      - backend
+
+    restart: unless-stopped
+
 
   prometheus:
     image: prom/prometheus:v3.14.0
@@ -105,7 +164,40 @@ services:
       - --storage.tsdb.path=/prometheus
       - --web.enable-lifecycle
 
+    depends_on:
+      - backend
+
+
+  grafana:
+    image: grafana/grafana:13.1.4
+    container_name: ecommerce-grafana
+
+    ports:
+      - "127.0.0.1:3000:3000"
+
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/elasticshop-overview.json
+
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+
+    depends_on:
+      - prometheus
+
+
 volumes:
+
   elasticsearch-data:
+
   postgres-data:
+
   prometheus-data:
+
+  grafana-data:
