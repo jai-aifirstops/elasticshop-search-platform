@@ -1,0 +1,144 @@
+ELASTICSHOP - PHASE 7
+
+TESTING + OBSERVABILITY + PRODUCTION HARDENING
+
+
+AUTOMATED TESTING
+
+Maven / JUnit
+
+Tests include:
+
+- Product entity to search-document conversion
+- Product price mutation
+- Product stock mutation
+- Redis cache key determinism
+- Pagination-specific cache key behavior
+
+
+HEALTH
+
+Spring Boot Actuator
+
+/actuator/health
+
+/actuator/health/liveness
+
+/actuator/health/readiness
+
+
+METRICS
+
+Micrometer
+
+Built-in metrics include:
+
+- JVM memory
+- JVM threads
+- garbage collection
+- process metrics
+- HTTP request metrics
+
+Custom ElasticShop metrics:
+
+elasticshop.search.requests
+
+elasticshop.search.duration
+
+Types:
+
+advanced
+fuzzy
+autocomplete
+facets
+
+
+PROMETHEUS FLOW
+
+Spring Boot
+     |
+     | /actuator/prometheus
+     v
+Prometheus
+     |
+     v
+Time Series Metrics
+
+
+PROMETHEUS
+
+Local URL:
+
+http://127.0.0.1:9090
+
+Example query:
+
+elasticshop_search_requests_total
+
+
+VALIDATION
+
+Search API now validates:
+
+- page >= 0
+- size limits
+- non-negative prices
+- query length
+- accepted sort values
+
+
+ERROR HANDLING
+
+Structured JSON API errors include:
+
+timestamp
+status
+error
+message
+path
+
+
+PRODUCTION HARDENING
+
+Enabled:
+
+- graceful shutdown
+- limited Actuator endpoint exposure
+- liveness probe
+- readiness probe
+- hidden default stack traces
+- hidden default binding details
+- common application metric tag
+
+
+CURRENT SYSTEM
+
+React
+   |
+   v
+Spring Boot
+   |
+   +---- PostgreSQL
+   |
+   +---- Redis
+   |
+   +---- Kafka
+   |
+   +---- Elasticsearch
+   |
+   +---- Micrometer
+             |
+             v
+         Prometheus
+
+
+NEXT PRODUCTION IMPROVEMENTS
+
+- Grafana dashboards
+- distributed tracing
+- Dockerize Spring Boot
+- Dockerize React
+- CI/CD pipeline
+- transactional outbox / CDC
+- authentication and authorization
+- Elasticsearch relevance evaluation
