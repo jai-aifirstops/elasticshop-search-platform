@@ -1,4 +1,4 @@
-﻿package com.jaideep.ecommerce.controller;
+package com.jaideep.ecommerce.controller;
 
 import com.jaideep.ecommerce.dto.ProductSearchResponse;
 import com.jaideep.ecommerce.model.Product;

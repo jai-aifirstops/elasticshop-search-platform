@@ -1,4 +1,4 @@
-﻿package com.jaideep.ecommerce.model;
+package com.jaideep.ecommerce.model;
 
 import java.util.List;
 

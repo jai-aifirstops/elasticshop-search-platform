@@ -1,4 +1,4 @@
-﻿package com.jaideep.ecommerce.service;
+package com.jaideep.ecommerce.service;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.GetResponse;

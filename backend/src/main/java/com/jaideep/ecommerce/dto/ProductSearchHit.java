@@ -1,4 +1,4 @@
-﻿package com.jaideep.ecommerce.dto;
+package com.jaideep.ecommerce.dto;
 
 import com.jaideep.ecommerce.model.Product;
 

@@ -1,4 +1,4 @@
-﻿package com.jaideep.ecommerce;
+package com.jaideep.ecommerce;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

@@ -1,4 +1,4 @@
-﻿package com.jaideep.ecommerce.controller;
+package com.jaideep.ecommerce.controller;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.InfoResponse;

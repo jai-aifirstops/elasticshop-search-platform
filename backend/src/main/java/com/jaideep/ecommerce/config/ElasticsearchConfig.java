@@ -1,4 +1,4 @@
-﻿package com.jaideep.ecommerce.config;
+package com.jaideep.ecommerce.config;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import org.springframework.beans.factory.annotation.Value;
