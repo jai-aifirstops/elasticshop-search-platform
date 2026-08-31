@@ -9,22 +9,36 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class AdvancedSearchService {
 
     private final RestClient restClient;
     private final String index;
+    private final SearchCacheService cacheService;
 
     public AdvancedSearchService(
-            @Value("${elasticsearch.url}") String elasticsearchUrl,
-            @Value("${elasticsearch.index}") String index
+            @Value("${elasticsearch.url}")
+            String elasticsearchUrl,
+
+            @Value("${elasticsearch.index}")
+            String index,
+
+            SearchCacheService cacheService
     ) {
-        this.restClient = RestClient.builder()
-                .baseUrl(elasticsearchUrl)
-                .build();
+
+        this.restClient =
+                RestClient.builder()
+                        .baseUrl(
+                                elasticsearchUrl
+                        )
+                        .build();
 
         this.index = index;
+
+        this.cacheService =
+                cacheService;
     }
 
     @SuppressWarnings("unchecked")
@@ -41,17 +55,60 @@ public class AdvancedSearchService {
             String sort
     ) {
 
-        int safePage = Math.max(page, 0);
-        int safeSize = Math.min(Math.max(size, 1), 100);
+        int safePage =
+                Math.max(
+                        page,
+                        0
+                );
 
-        List<Object> must = new ArrayList<>();
-        List<Object> filters = new ArrayList<>();
+        int safeSize =
+                Math.min(
+                        Math.max(size, 1),
+                        100
+                );
 
-        if (q != null && !q.isBlank()) {
+        String cacheKey =
+                cacheService
+                        .advancedSearchKey(
+                                q,
+                                brand,
+                                category,
+                                minPrice,
+                                maxPrice,
+                                minRating,
+                                inStock,
+                                safePage,
+                                safeSize,
+                                sort
+                        );
 
-            Map<String, Object> multiMatch = new LinkedHashMap<>();
+        Optional<Map<String, Object>> cached =
+                cacheService.get(
+                        cacheKey
+                );
 
-            multiMatch.put("query", q);
+        if (cached.isPresent()) {
+            return cached.get();
+        }
+
+        List<Object> must =
+                new ArrayList<>();
+
+        List<Object> filters =
+                new ArrayList<>();
+
+        if (
+                q != null &&
+                !q.isBlank()
+        ) {
+
+            Map<String, Object> multiMatch =
+                    new LinkedHashMap<>();
+
+            multiMatch.put(
+                    "query",
+                    q
+            );
 
             multiMatch.put(
                     "fields",
@@ -71,7 +128,10 @@ public class AdvancedSearchService {
             );
         }
 
-        if (brand != null && !brand.isBlank()) {
+        if (
+                brand != null &&
+                !brand.isBlank()
+        ) {
 
             filters.add(
                     Map.of(
@@ -84,7 +144,10 @@ public class AdvancedSearchService {
             );
         }
 
-        if (category != null && !category.isBlank()) {
+        if (
+                category != null &&
+                !category.isBlank()
+        ) {
 
             filters.add(
                     Map.of(
@@ -97,16 +160,26 @@ public class AdvancedSearchService {
             );
         }
 
-        if (minPrice != null || maxPrice != null) {
+        if (
+                minPrice != null ||
+                maxPrice != null
+        ) {
 
-            Map<String, Object> priceRange = new LinkedHashMap<>();
+            Map<String, Object> range =
+                    new LinkedHashMap<>();
 
             if (minPrice != null) {
-                priceRange.put("gte", minPrice);
+                range.put(
+                        "gte",
+                        minPrice
+                );
             }
 
             if (maxPrice != null) {
-                priceRange.put("lte", maxPrice);
+                range.put(
+                        "lte",
+                        maxPrice
+                );
             }
 
             filters.add(
@@ -114,7 +187,7 @@ public class AdvancedSearchService {
                             "range",
                             Map.of(
                                     "price",
-                                    priceRange
+                                    range
                             )
                     )
             );
@@ -149,17 +222,27 @@ public class AdvancedSearchService {
             );
         }
 
-        Map<String, Object> bool = new LinkedHashMap<>();
+        Map<String, Object> bool =
+                new LinkedHashMap<>();
 
         if (!must.isEmpty()) {
-            bool.put("must", must);
+
+            bool.put(
+                    "must",
+                    must
+            );
         }
 
         if (!filters.isEmpty()) {
-            bool.put("filter", filters);
+
+            bool.put(
+                    "filter",
+                    filters
+            );
         }
 
-        Map<String, Object> query = new LinkedHashMap<>();
+        Map<String, Object> query =
+                new LinkedHashMap<>();
 
         if (bool.isEmpty()) {
 
@@ -168,7 +251,8 @@ public class AdvancedSearchService {
                     Map.of()
             );
 
-        } else {
+        }
+        else {
 
             query.put(
                     "bool",
@@ -176,7 +260,8 @@ public class AdvancedSearchService {
             );
         }
 
-        Map<String, Object> request = new LinkedHashMap<>();
+        Map<String, Object> request =
+                new LinkedHashMap<>();
 
         request.put(
                 "from",
@@ -206,24 +291,43 @@ public class AdvancedSearchService {
                 )
         );
 
-        List<Object> sorts = buildSort(sort);
+        List<Object> sorting =
+                buildSort(sort);
 
-        if (!sorts.isEmpty()) {
-            request.put("sort", sorts);
+        if (!sorting.isEmpty()) {
+
+            request.put(
+                    "sort",
+                    sorting
+            );
         }
 
         Map<String, Object> response =
                 restClient
                         .post()
-                        .uri("/" + index + "/_search")
-                        .contentType(MediaType.APPLICATION_JSON)
+                        .uri(
+                                "/"
+                                        + index
+                                        + "/_search"
+                        )
+                        .contentType(
+                                MediaType.APPLICATION_JSON
+                        )
                         .body(request)
                         .retrieve()
                         .body(Map.class);
 
-        return response == null
-                ? Map.of()
-                : response;
+        Map<String, Object> finalResponse =
+                response == null
+                        ? Map.of()
+                        : response;
+
+        cacheService.putSearch(
+                cacheKey,
+                finalResponse
+        );
+
+        return finalResponse;
     }
 
     @SuppressWarnings("unchecked")
@@ -238,9 +342,13 @@ public class AdvancedSearchService {
                         50
                 );
 
-        Map<String, Object> multiMatch = new LinkedHashMap<>();
+        Map<String, Object> multiMatch =
+                new LinkedHashMap<>();
 
-        multiMatch.put("query", q);
+        multiMatch.put(
+                "query",
+                q
+        );
 
         multiMatch.put(
                 "fields",
@@ -256,9 +364,13 @@ public class AdvancedSearchService {
                 "AUTO"
         );
 
-        Map<String, Object> request = new LinkedHashMap<>();
+        Map<String, Object> request =
+                new LinkedHashMap<>();
 
-        request.put("size", safeSize);
+        request.put(
+                "size",
+                safeSize
+        );
 
         request.put(
                 "query",
@@ -282,8 +394,14 @@ public class AdvancedSearchService {
         Map<String, Object> response =
                 restClient
                         .post()
-                        .uri("/" + index + "/_search")
-                        .contentType(MediaType.APPLICATION_JSON)
+                        .uri(
+                                "/"
+                                        + index
+                                        + "/_search"
+                        )
+                        .contentType(
+                                MediaType.APPLICATION_JSON
+                        )
                         .body(request)
                         .retrieve()
                         .body(Map.class);
@@ -305,9 +423,13 @@ public class AdvancedSearchService {
                         20
                 );
 
-        Map<String, Object> request = new LinkedHashMap<>();
+        Map<String, Object> request =
+                new LinkedHashMap<>();
 
-        request.put("size", safeSize);
+        request.put(
+                "size",
+                safeSize
+        );
 
         request.put(
                 "query",
@@ -339,8 +461,14 @@ public class AdvancedSearchService {
         Map<String, Object> response =
                 restClient
                         .post()
-                        .uri("/" + index + "/_search")
-                        .contentType(MediaType.APPLICATION_JSON)
+                        .uri(
+                                "/"
+                                        + index
+                                        + "/_search"
+                        )
+                        .contentType(
+                                MediaType.APPLICATION_JSON
+                        )
                         .body(request)
                         .retrieve()
                         .body(Map.class);
@@ -352,6 +480,18 @@ public class AdvancedSearchService {
 
     @SuppressWarnings("unchecked")
     public Map<String, Object> facets() {
+
+        String cacheKey =
+                cacheService.facetsKey();
+
+        Optional<Map<String, Object>> cached =
+                cacheService.get(
+                        cacheKey
+                );
+
+        if (cached.isPresent()) {
+            return cached.get();
+        }
 
         Map<String, Object> aggregations =
                 new LinkedHashMap<>();
@@ -404,23 +544,45 @@ public class AdvancedSearchService {
                 )
         );
 
-        Map<String, Object> request = new LinkedHashMap<>();
+        Map<String, Object> request =
+                new LinkedHashMap<>();
 
-        request.put("size", 0);
-        request.put("aggs", aggregations);
+        request.put(
+                "size",
+                0
+        );
+
+        request.put(
+                "aggs",
+                aggregations
+        );
 
         Map<String, Object> response =
                 restClient
                         .post()
-                        .uri("/" + index + "/_search")
-                        .contentType(MediaType.APPLICATION_JSON)
+                        .uri(
+                                "/"
+                                        + index
+                                        + "/_search"
+                        )
+                        .contentType(
+                                MediaType.APPLICATION_JSON
+                        )
                         .body(request)
                         .retrieve()
                         .body(Map.class);
 
-        return response == null
-                ? Map.of()
-                : response;
+        Map<String, Object> finalResponse =
+                response == null
+                        ? Map.of()
+                        : response;
+
+        cacheService.putFacets(
+                cacheKey,
+                finalResponse
+        );
+
+        return finalResponse;
     }
 
     private List<Object> buildSort(
@@ -430,12 +592,17 @@ public class AdvancedSearchService {
         if (
                 sort == null ||
                 sort.isBlank() ||
-                sort.equalsIgnoreCase("relevance")
+                sort.equalsIgnoreCase(
+                        "relevance"
+                )
         ) {
+
             return List.of();
         }
 
-        return switch (sort.toLowerCase()) {
+        return switch (
+                sort.toLowerCase()
+        ) {
 
             case "price_asc" ->
                     List.of(
@@ -481,7 +648,8 @@ public class AdvancedSearchService {
                             )
                     );
 
-            default -> List.of();
+            default ->
+                    List.of();
         };
     }
 }

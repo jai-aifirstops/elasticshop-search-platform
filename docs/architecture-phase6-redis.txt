@@ -1,0 +1,106 @@
+ELASTICSHOP - PHASE 6
+
+REDIS SEARCH CACHE
+
+Request Flow
+
+Client
+   |
+   v
+Spring Boot
+   |
+   v
+Redis
+   |
+   +---- CACHE HIT ----> return cached result
+   |
+   +---- CACHE MISS
+            |
+            v
+       Elasticsearch
+            |
+            v
+       Store result
+       in Redis
+
+
+SEARCH CACHE
+
+Advanced search TTL:
+60 seconds
+
+Facet cache TTL:
+5 minutes
+
+
+CACHE INVALIDATION
+
+Product Update
+   |
+   v
+PostgreSQL
+   |
+   v
+Kafka
+   |
+   v
+Kafka Consumer
+   |
+   +----> Elasticsearch update
+   |
+   +----> Redis cache invalidation
+
+
+WHY REDIS
+
+Repeated search requests do not always need to execute
+the same Elasticsearch query again.
+
+Redis can reduce:
+
+- Elasticsearch query load
+- CPU usage
+- repeated aggregation work
+- response latency for hot searches
+
+
+CURRENT CACHED ENDPOINTS
+
+/api/search/advanced
+
+/api/search/facets
+
+
+NOT CACHED
+
+Fuzzy search
+
+Autocomplete
+
+These are intentionally left uncached for now because
+their query diversity is usually much higher.
+
+
+CACHE CONSISTENCY
+
+When Kafka reports a product change:
+
+1. Consumer updates Elasticsearch.
+2. Consumer clears search cache.
+3. Next request misses Redis.
+4. Fresh Elasticsearch result is returned.
+5. Fresh result is stored in Redis.
+
+
+PRODUCTION NOTE
+
+This learning implementation clears search:* keys.
+
+For very large Redis deployments, avoid broad KEYS-based
+cache invalidation and use strategies such as:
+
+- versioned cache namespaces
+- targeted cache tags
+- SCAN
+- event-specific invalidation
+- short TTLs

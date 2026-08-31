@@ -3,6 +3,7 @@ package com.jaideep.ecommerce.kafka;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.jaideep.ecommerce.database.CatalogDatabaseService;
 import com.jaideep.ecommerce.database.ProductEntity;
+import com.jaideep.ecommerce.service.SearchCacheService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
@@ -15,7 +16,10 @@ import java.util.concurrent.atomic.AtomicReference;
 public class ProductEventConsumer {
 
     private final ElasticsearchClient client;
+
     private final CatalogDatabaseService databaseService;
+
+    private final SearchCacheService cacheService;
 
     private final AtomicLong processedEvents =
             new AtomicLong();
@@ -30,13 +34,18 @@ public class ProductEventConsumer {
 
     public ProductEventConsumer(
             ElasticsearchClient client,
-            CatalogDatabaseService databaseService
+            CatalogDatabaseService databaseService,
+            SearchCacheService cacheService
     ) {
+
         this.client =
                 client;
 
         this.databaseService =
                 databaseService;
+
+        this.cacheService =
+                cacheService;
     }
 
     @KafkaListener(
@@ -53,6 +62,7 @@ public class ProductEventConsumer {
                 );
 
         if (parts.length != 2) {
+
             throw new IllegalArgumentException(
                     "Invalid product event: "
                             + payload
@@ -123,9 +133,25 @@ public class ProductEventConsumer {
                         request.index(index)
         );
 
-        lastEvent.set(
-                payload
-        );
+        /*
+         * Product data changed.
+         * Cached search/facet results may now be stale.
+         */
+        try {
+
+            cacheService
+                    .clearSearchCache();
+
+        }
+        catch (Exception exception) {
+
+            System.err.println(
+                    "Redis cache invalidation failed: "
+                            + exception.getMessage()
+            );
+        }
+
+        lastEvent.set(payload);
 
         processedEvents.incrementAndGet();
 
@@ -136,10 +162,12 @@ public class ProductEventConsumer {
     }
 
     public long processedEvents() {
+
         return processedEvents.get();
     }
 
     public String lastEvent() {
+
         return lastEvent.get();
     }
 }
