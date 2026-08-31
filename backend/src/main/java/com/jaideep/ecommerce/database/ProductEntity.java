@@ -156,6 +156,17 @@ public class ProductEntity {
         return createdAt;
     }
 
+    public void updatePrice(
+            Double price
+    ) {
+        this.price = price;
+    }
+
+    public void updateStock(
+            Boolean inStock
+    ) {
+        this.inStock = inStock;
+    }
     public Product toProduct() {
 
         List<String> tagList;

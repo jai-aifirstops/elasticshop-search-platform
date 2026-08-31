@@ -1,5 +1,7 @@
 package com.jaideep.ecommerce.database;
 
+import com.jaideep.ecommerce.model.Product;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,6 +42,80 @@ public class CatalogDatabaseService {
         return repository.findAll();
     }
 
+    @Transactional
+    public Product updatePrice(
+            Long id,
+            Double price
+    ) {
+
+        if (
+                price == null ||
+                price < 0
+        ) {
+            throw new IllegalArgumentException(
+                    "Price must be zero or greater"
+            );
+        }
+
+        ProductEntity entity =
+                repository
+                        .findById(id)
+                        .orElseThrow(
+                                () ->
+                                        new java.util.NoSuchElementException(
+                                                "Product not found: " + id
+                                        )
+                        );
+
+        entity.updatePrice(price);
+
+        repository.save(entity);
+
+        return entity.toProduct();
+    }
+
+    @Transactional
+    public Product updateStock(
+            Long id,
+            Boolean inStock
+    ) {
+
+        if (inStock == null) {
+            throw new IllegalArgumentException(
+                    "inStock must be provided"
+            );
+        }
+
+        ProductEntity entity =
+                repository
+                        .findById(id)
+                        .orElseThrow(
+                                () ->
+                                        new java.util.NoSuchElementException(
+                                                "Product not found: " + id
+                                        )
+                        );
+
+        entity.updateStock(inStock);
+
+        repository.save(entity);
+
+        return entity.toProduct();
+    }
+
+    public ProductEntity findEntityById(
+            Long id
+    ) {
+
+        return repository
+                .findById(id)
+                .orElseThrow(
+                        () ->
+                                new java.util.NoSuchElementException(
+                                        "Product not found: " + id
+                                )
+                );
+    }
     private List<ProductEntity> seedProducts() {
 
         LocalDate date =

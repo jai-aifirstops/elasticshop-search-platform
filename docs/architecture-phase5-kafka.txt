@@ -1,0 +1,102 @@
+ELASTICSHOP - PHASE 5
+
+EVENT-DRIVEN SEARCH SYNCHRONIZATION
+
+React
+  |
+  v
+Spring Boot
+  |
+  v
+PostgreSQL
+SOURCE OF TRUTH
+  |
+  | database update completes
+  v
+Kafka Producer
+  |
+  v
+product-events
+  |
+  v
+Kafka Consumer
+product-search-indexer
+  |
+  v
+Elasticsearch
+SEARCH INDEX
+
+
+CURRENT EVENT FLOW
+
+1. API receives product update.
+2. Spring Boot updates PostgreSQL.
+3. PostgreSQL transaction completes.
+4. Producer publishes a Kafka event.
+5. Kafka stores the event.
+6. Consumer receives the event.
+7. Consumer reads authoritative data from PostgreSQL.
+8. Consumer updates Elasticsearch.
+9. Search reflects the change.
+
+
+CURRENT EVENTS
+
+UPSERT|productId
+DELETE|productId
+
+
+POSTGRESQL
+
+- Source of truth
+- Transactional product catalog
+- Authoritative product data
+
+
+KAFKA
+
+- Event transport
+- Asynchronous synchronization
+- Decouples database writes from indexing
+- Supports additional consumers later
+
+
+ELASTICSEARCH
+
+- Full-text search
+- Relevance
+- Filters
+- Facets
+- Aggregations
+- Fuzzy matching
+- Highlighting
+- Autocomplete
+
+
+RECOVERY
+
+The application still performs a full PostgreSQL
+to Elasticsearch synchronization during startup.
+
+
+PRODUCTION IMPROVEMENT
+
+Current flow:
+
+database commit
+then
+Kafka publish
+
+There is a small failure window between those
+operations.
+
+A future improvement is:
+
+Transactional Outbox Pattern
+
+or
+
+Change Data Capture (CDC)
+
+so the database change and event publication can
+be made reliable across crashes and restarts.
