@@ -1,0 +1,35 @@
+ELASTICSHOP - PHASE 4 ARCHITECTURE
+
+React Frontend
+    |
+    | REST API
+    v
+Spring Boot
+    |
+    +------------------------+
+    |                        |
+    v                        v
+PostgreSQL               Elasticsearch
+Source of Truth          Search Index
+Port 55432               Port 9200
+
+PostgreSQL responsibilities:
+- Authoritative product catalog
+- Persistent structured product data
+
+Elasticsearch responsibilities:
+- Full-text search
+- Relevance scoring
+- Filters
+- Facets
+- Aggregations
+- Fuzzy matching
+- Highlighting
+- Autocomplete
+- Search sorting and pagination
+
+Synchronization:
+PostgreSQL -> Spring Boot -> Elasticsearch
+
+Current catalog:
+30 products
