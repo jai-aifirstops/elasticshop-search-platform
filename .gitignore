@@ -6,3 +6,5 @@ node_modules/
 .env
 .env.production
 deployment/.env.production
+.vercel/
+.vercel/

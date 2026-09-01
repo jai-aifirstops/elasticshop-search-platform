@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+
+function apiUrl(path) {
+  return API_BASE_URL + path
+}
 const DEFAULT_PAGE_SIZE = 6
 
 function money(value) {
@@ -162,8 +167,8 @@ function App() {
       try {
         const [healthResponse, facetsResponse] =
           await Promise.all([
-            fetch('/api/health'),
-            fetch('/api/search/facets'),
+            fetch(apiUrl('/api/health')),
+            fetch(apiUrl('/api/search/facets')),
           ])
 
         if (!healthResponse.ok) {
@@ -247,7 +252,7 @@ function App() {
         params.set('sort', sort)
 
         const response = await fetch(
-          `/api/search/advanced?${params.toString()}`,
+          apiUrl(apiUrl(`/api/search/advanced?${params.toString()}`)),
           {
             signal: controller.signal,
           },
@@ -307,7 +312,7 @@ function App() {
         })
 
         const response = await fetch(
-          `/api/search/autocomplete?${params.toString()}`,
+          apiUrl(apiUrl(`/api/search/autocomplete?${params.toString()}`)),
           {
             signal: controller.signal,
           },
